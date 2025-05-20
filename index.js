@@ -1,0 +1,251 @@
+/* import express from 'express';
+import router from './route.js'
+import pkg  from 'body-parser';
+import multer from 'multer';
+const { urlencoded }=pkg
+const app = express();
+
+const PORT = 3000 */
+
+/* app.get('/', (req, res) => {
+    res.send('Hello pandu  World!')
+}) */
+
+
+/* 
+app.get('/about', (req, res) => {
+    res.send('Hello About')
+})
+
+app.get('/contact', (req, res) => {
+    res.send('Hello contact')
+}) */
+
+//dynamic
+
+
+/* app.get('/user/:username', (req, res) => {
+    const username = req.params.username
+    res.send(`Hello  ${username}!`)
+}
+) */
+
+//app.get('/user/:username',usernameController )
+
+
+//query string
+//app.get('/search/:query', searchController);
+/* app.get('/search', (req, res) => {
+    const query = req.query.q
+    res.send(`You searched for ${query}`)
+}
+) */
+
+
+//app.use('/user', router)//for external controller 
+
+//post
+
+/* app.use(express.json())
+
+app.post('/user', (req, res) => {
+    const { name, email } = req.body
+    res.send(`Hello ${name} with email ${email}`)
+})
+
+
+app.put('/user/:id',(req, res) => {
+    const userId=req.params.id
+    const { name, email } = req.body
+    res.send(`Hello ${name} with email ${email} and id ${userId}`)
+})
+
+
+app.delete('/user/:id',(req,res)=>{
+    const userId=req.params.id
+    res.json({
+        Message:`userWith id ${userId} deleted Surface`
+    })
+}) */
+
+
+
+/* app.get('/user/:name/:id(\\d{5})', (req, res) => {
+    const { name, id } = req.params;
+    res.json({ name, id });
+}); */
+
+
+
+//middleware
+
+
+/* app.use('/welcome',(req,res,next)=>{
+    console.log('Welcome to my app' + Date.now())
+    next();
+})
+
+app.get('/',(req,res)=>{
+    res.send('Hello Express')
+})
+
+
+app.get('/welcome',(req,res)=>{
+    res.send('Hello Welcome')
+}) */
+
+
+//Start end middle 
+/* 
+app.use((req,res,next)=>{
+    console.log('Start')
+
+    res.on('finish',()=>{
+        console.log('End')
+    })
+
+    next()
+})
+
+app.get('/',(req,res)=>{
+    console.log('Middle')
+    res.send('Hello Express')
+}) */
+
+
+//Ejs template Dynamiclly 
+/* 
+app.set('view engine','ejs')
+
+app.get('/', (req,res)=>{
+const userName='Pandu'
+res.render('index',{userName})
+}) */
+
+
+//Service Static Files
+
+//app.use(express.static('public'))
+
+
+
+
+//Handling form Data
+
+/* const storage =multer.diskStorage({
+    destination:'upload',
+    filename:(req,file,cd)=>{
+        cd(null,file.fieldname+'_'+Date.now()+file.originalname)
+    }
+})
+const upload=multer({storage,limits:{fileSize:1024000 }})
+app.use(urlencoded({extended:true}))
+app.use(upload.single('image'))
+
+app.post('/form',(req,res)=>{
+    console.log(req.body)
+    console.log(req.file);
+
+    res.send('Form Received');
+});
+
+app.get('*',(req,res)=>{
+    res.send('Sorry This iS Invalid URL')
+})
+app.listen(PORT, () => {
+    console.log(`Server is running on http://localhost:${PORT}`)
+}) */
+//Database Connection
+/*  import { Client } from 'pg';
+
+const con = new Client({
+ user: 'postgres',
+ host: 'localhost',
+ database: 'Express',
+ password: 'Pandu@2000$',
+ port: 5432,
+});
+
+con.connect()
+ .then(() => console.log("Connected"))
+ .catch(err => console.error("Connection error:", err));
+*/
+
+
+
+
+import express from 'express';
+import { Client } from 'pg';
+
+const app = express();
+app.use(express.json());
+
+
+const client = new Client({
+    user: 'postgres',
+    host: 'localhost',
+    database: 'Express',
+    password: 'Pandu@2000$',
+    port: 5432,
+});
+
+client.connect()
+    .then(() => console.log('Connected to PostgreSQL'))
+    .catch(err => console.error('Connection error', err.stack));
+
+
+//  CREATE - Add a new user
+app.post('/users', async (req, res) => {
+    const { name, email } = req.body;
+    try {
+        const result = await client.query(
+            'INSERT INTO users (name, email) VALUES ($1, $2) RETURNING *',
+            [name, email]
+        );
+        res.status(201).json(result.rows[0]);
+    } catch (err) {
+        console.error("Insert error:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+//  READ - Get all users
+app.get('/users', async (req, res) => {
+    try {
+        const result = await client.query('SELECT * FROM users');
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+//  UPDATE - Update a user
+app.put('/users/:id', async (req, res) => {
+    const { id } = req.params;
+    const { name, email } = req.body;
+    try {
+        const result = await client.query(
+            'UPDATE users SET name = $1, email = $2 WHERE id = $3 RETURNING *',
+            [name, email, id]
+        );
+        res.json(result.rows[0]);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+//  DELETE - Remove a user
+app.delete('/users/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        await client.query('DELETE FROM users WHERE id = $1', [id]);
+        res.json({ message: 'User deleted' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Start server
+app.listen(3000, () => {
+    console.log('Server is running on http://localhost:3000');
+});
