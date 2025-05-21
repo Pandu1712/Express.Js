@@ -172,7 +172,7 @@ con.connect()
 */
 
 
-
+/*
 
 import express from 'express';
 import { Client } from 'pg';
@@ -248,4 +248,199 @@ app.delete('/users/:id', async (req, res) => {
 // Start server
 app.listen(3000, () => {
     console.log('Server is running on http://localhost:3000');
+});
+*/
+
+
+//Cookies
+
+/* import express from 'express';
+import cookieParser from 'cookie-parser';
+
+const app=express()
+const PORT=3000
+
+app.use(cookieParser())
+
+app.get('/',(req,res)=>{
+res.cookie('name','express-app',{maxAge:36000})
+    res.send('Hello World')
+})
+
+app.get('/fetch',(req,res)=>{
+    console.log(req.cookies);
+    res.send('API Called')
+})
+
+app.listen(PORT,()=>{
+    console.log(`Server is running on http://localhost:${PORT}`)
+}) */
+
+
+//session and page views     
+
+/* import cookieParser from 'cookie-parser';
+import express from 'express';
+
+import session, { Cookie } from 'express-session';
+
+
+const app = express()
+const PORT = 3000
+
+app.use(cookieParser())
+app.use(session({
+    secret: 'sample-secret',
+    resave: false,
+    saveUninitialized: false,
+}))
+
+
+app.get('/', (req, res) => {
+    res.send('Hello World')
+})
+
+app.get('/visit', (req, res) => {
+    if (req.session.page_views) {
+        req.session.page_views++;
+        res.send(`You Visited This Page ${req.session.page_views} times`)
+    }
+    else {
+        req.session.page_views = 1;
+        res.send('Welcome to our page for First time')
+    }
+})
+
+app.get('/remove-visit', (req, res) => {
+    req.session.destroy()
+    res.send('station removed')
+})
+app.listen(PORT, () => {
+    console.log(`Server is running on http://localhost:${PORT}`)
+}) */
+
+
+    //Normal Login
+/* import express from 'express';
+import session from 'express-session';
+import cookieParser from 'cookie-parser';
+
+const app = express();
+const PORT = 3000;
+
+app.use(express.json()); 
+app.use(cookieParser());
+app.use(session({
+    secret: 'sample-secret',
+    resave: false,
+    saveUninitialized: false,
+}));
+
+const users = [];
+
+// Home Route
+app.get('/', (req, res) => {
+    res.send('Hello World');
+});
+
+// Register Route
+app.post('/register', (req, res) => {
+    const { username, password } = req.body;
+    const existingUser = users.find(user => user.username === username);
+    if (existingUser) {
+        return res.status(400).send('User already exists');
+    }
+    users.push({ username, password });
+    res.send('User Registered');
+});
+
+// Login Route
+app.post('/login', (req, res) => {
+    const { username, password } = req.body;
+    const user = users.find(user => user.username === username && user.password === password);
+    if (!user) {
+        return res.status(401).send('Not Authorized');
+    }
+    req.session.user = user;
+    res.send('User Logged In');
+});
+
+// Protected Dashboard Route
+app.get('/dashboard', (req, res) => {
+    if (!req.session.user) {
+        return res.status(401).send('Not Authorized');
+    }
+    res.send(`Welcome to Dashboard, ${req.session.user.username}`);
+});
+
+// Logout Route (optional)
+app.post('/logout', (req, res) => {
+    req.session.destroy();
+    res.send('Logged out');
+});
+
+// Start Server
+app.listen(PORT, () => {
+    console.log(`Server is running on http://localhost:${PORT}`);
+});
+ */
+
+
+//JWT Authentication
+import express from 'express';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+const app = express();
+const PORT = 3000;
+
+
+app.use(express.json()); 
+
+
+const users = [];
+
+// Home Route
+app.get('/', (req, res) => {
+    res.send('Hello World');
+});
+
+// Register Route
+app.post('/register', async(req, res) => {
+    const { username, password } = req.body;
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const existingUser = users.find(user => user.username === username);
+    if (existingUser) {
+        return res.status(400).send('User already exists');
+    }
+    users.push({ username, password:hashedPassword });
+    res.send('User Registered');
+});
+
+// Login Route
+app.post('/login', async(req, res) => {
+    const { username, password } = req.body;
+    const user = users.find(user => user.username === username);
+    if (!user || !(await bcrypt.compare(password,user.password))) {
+        return res.status(401).send('Not Authorized');
+    }
+    const token=jwt.sign({username},'test#secret')
+    res.json({token})
+    
+});
+
+// Protected Dashboard Route
+app.get('/dashboard', (req, res) => {
+const token=req.header('Authorization')
+const decodeToken=jwt.verify(token,'test#secret')
+if (decodeToken.username) {
+    res.send(`Welcome to the Dashboard,${decodeToken.username}`);
+    } else {
+        res.status(401).send('Not Authorized');
+        }
+});
+
+
+// Start Server
+app.listen(PORT, () => {
+    console.log(`Server is running on http://localhost:${PORT}`);
 });
